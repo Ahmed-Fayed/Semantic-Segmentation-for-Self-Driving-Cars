@@ -1,0 +1,10 @@
+.idea
+*output
+archive*
+*__pycache*
+mlartifacts
+mlruns
+backup
+*.pt
+*.png
+*.jpg
