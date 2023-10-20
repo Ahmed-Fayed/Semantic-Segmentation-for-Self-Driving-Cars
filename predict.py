@@ -1,10 +1,9 @@
 import os
-
+from glob import glob
 import torch
 from PIL import Image
 from Utils.models import UNet  #, TransUNet
-from Utils.dataset import test_iterator, val_iterator
-from torchvision import transforms
+from Utils.dataset import LyftDataset, t1
 import torch.nn.functional as F
 from config import *
 from Utils.utils import *
@@ -17,19 +16,13 @@ print(f"model summery: {model}")
 
 model.eval()
 
-test_transforms = transforms.Compose([
-    transforms.Resize(image_size),
-    # transforms.CenterCrop(image_size),
-    transforms.ToTensor(),
-    # transforms.Normalize(mean=target_means, std=target_stds)
-])
+images_dir = BASE_OUTPUT + "/test_dataset/images"
+masks_dir = BASE_OUTPUT + "/test_dataset/masks"
+test_dataset = LyftDataset(images_dir, masks_dir, transform=t1)
+test_iterator = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True)
+images, masks = next(iter(test_iterator))
 
-# img_path = os.path.join(BASE_OUTPUT, "test_dataset/images/Tile 1/image_part_001.jpg")
-# img = Image.open(img_path)
-# img = img.convert("RGB")
-# trans_img = test_transforms(img)
-# trans_img = torch.unsqueeze(trans_img, 0)
-images, masks = next(iter(val_iterator))
+original_images = glob(images_dir + "/*.png")
 
 with torch.no_grad():
     y_pred = model(images)
@@ -37,6 +30,11 @@ with torch.no_grad():
     top_pred = y_prob.argmax(1, keepdim=True)
     top_pred = torch.squeeze(top_pred)
     print(f"mask: {top_pred}, shape: {top_pred.shape}")
+
+img_0 = Image.open(original_images[0])
+
+# Visualize example
+display(img_0, masks[0], top_pred[0], "Original Image", "Predicted Mask", "Final_Prediction_2", save=False)
 
 
 def check_accuracy(loader, model):
@@ -62,52 +60,50 @@ def check_accuracy(loader, model):
 
 # check_accuracy(test_iterator, model)
 
-# Visualize example
-display(images[0].movedim(0, -1), top_pred[0], "Original Image", "Predicted Mask", "Final_Prediction_1", save=True)
-display(images[0].movedim(0, -1), masks[0], "Original Image", "Original Mask", "Ground_Truth", save=True)
 
+for x,y in test_iterator:
+    # x = x.to(DEVICE)
+    fig , ax =  plt.subplots(3, 3, figsize=(18, 18))
+    softmax = torch.nn.Softmax(dim=1)
+    preds = torch.argmax(softmax(model(x)),axis=1).to('cpu')
+    img1 = np.transpose(np.array(x[0,:,:,:].to('cpu')),(1,2,0))
+    preds1 = np.array(preds[0,:,:])
+    mask1 = np.array(y[0,:,:])
+    img2 = np.transpose(np.array(x[1,:,:,:].to('cpu')),(1,2,0))
+    preds2 = np.array(preds[1,:,:])
+    mask2 = np.array(y[1,:,:])
+    img3 = np.transpose(np.array(x[2,:,:,:].to('cpu')),(1,2,0))
+    preds3 = np.array(preds[2,:,:])
+    mask3 = np.array(y[2,:,:])
+    ax[0,0].set_title('Image')
+    ax[0,1].set_title('Prediction')
+    ax[0,2].set_title('Mask')
+    ax[1,0].set_title('Image')
+    ax[1,1].set_title('Prediction')
+    ax[1,2].set_title('Mask')
+    ax[2,0].set_title('Image')
+    ax[2,1].set_title('Prediction')
+    ax[2,2].set_title('Mask')
+    ax[0][0].axis("off")
+    ax[1][0].axis("off")
+    ax[2][0].axis("off")
+    ax[0][1].axis("off")
+    ax[1][1].axis("off")
+    ax[2][1].axis("off")
+    ax[0][2].axis("off")
+    ax[1][2].axis("off")
+    ax[2][2].axis("off")
+    ax[0][0].imshow(img1)
+    ax[0][1].imshow(preds1)
+    ax[0][2].imshow(mask1)
+    ax[1][0].imshow(img2)
+    ax[1][1].imshow(preds2)
+    ax[1][2].imshow(mask2)
+    ax[2][0].imshow(img3)
+    ax[2][1].imshow(preds3)
+    ax[2][2].imshow(mask3)
+    break
 
-
-# for x,y in test_iterator:
-#     # x = x.to(DEVICE)
-#     fig , ax =  plt.subplots(3, 3, figsize=(18, 18))
-#     softmax = torch.nn.Softmax(dim=1)
-#     preds = torch.argmax(softmax(model(x)),axis=1).to('cpu')
-#     img1 = np.transpose(np.array(x[0,:,:,:].to('cpu')),(1,2,0))
-#     preds1 = np.array(preds[0,:,:])
-#     mask1 = np.array(y[0,:,:])
-#     img2 = np.transpose(np.array(x[1,:,:,:].to('cpu')),(1,2,0))
-#     preds2 = np.array(preds[1,:,:])
-#     mask2 = np.array(y[1,:,:])
-#     img3 = np.transpose(np.array(x[2,:,:,:].to('cpu')),(1,2,0))
-#     preds3 = np.array(preds[2,:,:])
-#     mask3 = np.array(y[2,:,:])
-#     ax[0,0].set_title('Image')
-#     ax[0,1].set_title('Prediction')
-#     ax[0,2].set_title('Mask')
-#     ax[1,0].set_title('Image')
-#     ax[1,1].set_title('Prediction')
-#     ax[1,2].set_title('Mask')
-#     ax[2,0].set_title('Image')
-#     ax[2,1].set_title('Prediction')
-#     ax[2,2].set_title('Mask')
-#     ax[0][0].axis("off")
-#     ax[1][0].axis("off")
-#     ax[2][0].axis("off")
-#     ax[0][1].axis("off")
-#     ax[1][1].axis("off")
-#     ax[2][1].axis("off")
-#     ax[0][2].axis("off")
-#     ax[1][2].axis("off")
-#     ax[2][2].axis("off")
-#     ax[0][0].imshow(img1)
-#     ax[0][1].imshow(preds1)
-#     ax[0][2].imshow(mask1)
-#     ax[1][0].imshow(img2)
-#     ax[1][1].imshow(preds2)
-#     ax[1][2].imshow(mask2)
-#     ax[2][0].imshow(img3)
-#     ax[2][1].imshow(preds3)
-#     ax[2][2].imshow(mask3)
-#     break
-# plt.show()
+fig_path = os.path.join(ARTIFACTS_OUTPUT, "test_results.jpg")
+# plt.savefig(fig_path, facecolor='w', transparent=False, bbox_inches='tight', dpi=100)
+plt.show()

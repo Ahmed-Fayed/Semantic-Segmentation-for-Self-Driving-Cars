@@ -7,7 +7,7 @@ from PIL import Image
 
 
 # helper function for image visualization
-def display(img, label, img_title, label_title, save_name="vis", save=True):
+def display(img, mask, predicted_mask=None, img_title="Original Image", mask_title="Ground Truth Mask", save_name="vis", save=True):
     """
     Plot images in one row
     """
@@ -15,13 +15,20 @@ def display(img, label, img_title, label_title, save_name="vis", save=True):
     plt.xticks([]);
     plt.yticks([])
 
-    plt.subplot(1, 2, 1)
+    col_cnt = 3 if predicted_mask is not None else 2
+
+    plt.subplot(1, col_cnt, 1)
     plt.imshow(img)
     plt.title(img_title)
 
-    plt.subplot(1, 2, 2)
-    plt.imshow(label)
-    plt.title(label_title)
+    plt.subplot(1, col_cnt, 2)
+    plt.imshow(mask)
+    plt.title(mask_title)
+
+    if predicted_mask is not None:
+        plt.subplot(1, col_cnt, 3)
+        plt.imshow(predicted_mask)
+        plt.title("Predicted Mask")
 
     if not os.path.exists(ARTIFACTS_OUTPUT):
         os.mkdir(ARTIFACTS_OUTPUT)
@@ -33,17 +40,17 @@ def display(img, label, img_title, label_title, save_name="vis", save=True):
     plt.show()
 
 
-def visualize(image, mask, original_image=None, original_mask=None, fig_name="", save=True):
+def visualize(image, mask, original_image=None, original_mask=None, fig_name="vis.jpg", save=True):
     fontsize = 16
 
     if original_image is None and original_mask is None:
-        f, ax = plt.subplots(2, 1, figsize=(10, 10), squeeze=True)
+        f, ax = plt.subplots(2, 1, figsize=(7, 7), squeeze=True)
         f.set_tight_layout(h_pad=5, w_pad=5)
 
         ax[0].imshow(image)
         ax[1].imshow(mask)
     else:
-        f, ax = plt.subplots(2, 2, figsize=(16, 12), squeeze=True)
+        f, ax = plt.subplots(2, 2, figsize=(10, 10), squeeze=True)
         plt.tight_layout(pad=0.2, w_pad=1.0, h_pad=0.01)
 
         ax[0, 0].imshow(original_image)
@@ -57,12 +64,12 @@ def visualize(image, mask, original_image=None, original_mask=None, fig_name="",
 
         ax[1, 1].imshow(mask)
         ax[1, 1].set_title('Transformed Mask', fontsize=fontsize)
-        plt.show()
 
     if save:
-        fig_path = os.path.join(ARTIFACTS_OUTPUT, fig_name + ".jpg")
+        fig_path = os.path.join(ARTIFACTS_OUTPUT, fig_name)
         plt.savefig(fig_path, facecolor='w', transparent=False, bbox_inches='tight', dpi=100)
 
+    plt.show()
 
 
 def display_images(data, no_img_mask):
@@ -103,4 +110,17 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
+def calculate_accuracy(predicted, label):
+    """
+        Calculate pixel-wise accuracy for semantic segmentation.
 
+        Args:
+        - preds (torch.Tensor): Predicted segmentation masks of shape (batch_size, num_classes, height, width).
+        - labels (torch.Tensor): Ground truth segmentation masks of shape (batch_size, height, width).
+
+        Returns:
+        - accuracy (float): Pixel-wise accuracy.
+        """
+
+    seg_acc = (label.cpu() == torch.argmax(predicted, axis=1).cpu()).sum() / torch.numel(label.cpu())
+    return seg_acc

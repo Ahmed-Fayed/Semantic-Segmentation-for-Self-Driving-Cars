@@ -10,7 +10,7 @@ import numpy as np
 import time
 import gc
 from config import *
-from Utils.utils import epoch_time, plot_results
+from Utils.utils import epoch_time, plot_results, calculate_accuracy
 
 from Utils.models import UNet
 from Utils.dataset import train_iterator, val_iterator
@@ -20,53 +20,31 @@ from mlflow.tracking import MlflowClient
 from mlflow.exceptions import MlflowException
 
 
-def calculate_pixel_accuracy(preds, labels):
-    """
-    Calculate pixel-wise accuracy for semantic segmentation.
-
-    Args:
-    - preds (torch.Tensor): Predicted segmentation masks of shape (batch_size, num_classes, height, width).
-    - labels (torch.Tensor): Ground truth segmentation masks of shape (batch_size, height, width).
-
-    Returns:
-    - accuracy (float): Pixel-wise accuracy.
-    """
-    # Get the predicted class labels for each pixel
-    _, predicted_classes = torch.max(preds, dim=1)  # Get the class index with the highest score
-
-    # Calculate pixel-wise accuracy
-    correct_pixels = (predicted_classes == labels).float()
-    accuracy = correct_pixels.sum() / labels.numel()
-
-    return accuracy
-
-
-def calculate_accuracy(predicted, label):
-  seg_acc = (label.cpu() == torch.argmax(predicted, axis=1).cpu()).sum() / torch.numel(label.cpu())
-  return seg_acc
-
-
-def train(train_iterator, model, criterion, optimizer, device):
+def train(train_iterator, model, criterion, optimizer, scaler, device):
     train_size = len(train_iterator)
     epoch_loss = 0
     epoch_acc = 0
 
     model.train()
 
-    for (x, y) in train_iterator:
+    for (data, targets) in train_iterator:
         # compute predictions and loss
-        x = x.to(device)
-        y = y.to(device)
-        y_pred = model(x)
+        data = data.to(device)
+        targets = targets.to(device)
+        targets = targets.type(torch.long)
 
-        loss = criterion(y_pred, y)
+        # forward
+        with torch.cuda.amp.autocast():
+            predictions = model(data)
+            loss = criterion(predictions, targets)
 
         # Backprobagation
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-        accuracy = calculate_accuracy(y_pred, y)
+        accuracy = calculate_accuracy(predictions, targets)
 
         epoch_loss += loss.item()
         epoch_acc += accuracy
@@ -85,15 +63,16 @@ def evaluate(val_iterator, model, criterion, device):
     model.eval()
 
     with torch.no_grad():
-        for (x, y) in val_iterator:
-            x = x.to(device)
-            y = y.to(device)
+        for (data, targets) in val_iterator:
+            data = data.to(device)
+            targets = targets.to(device)
+            targets = targets.type(torch.long)
 
-            y_pred= model(x)
+            predictions = model(data)
 
-            loss = criterion(y_pred, y)
+            loss = criterion(predictions, targets)
 
-            accuracy = calculate_accuracy(y_pred, y)
+            accuracy = calculate_accuracy(predictions, targets)
 
             epoch_loss += loss.item()
             epoch_acc += accuracy
@@ -175,11 +154,13 @@ if __name__ == "__main__":
         # Optimizer
         optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate)
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"device: {device}")
+        # Grad Scaler
+        scaler = torch.cuda.amp.GradScaler()
 
-        model = model.to(device)
-        criterion = criterion.to(device)
+        print(f"device: {DEVICE}")
+
+        model = model.to(DEVICE)
+        criterion = criterion.to(DEVICE)
 
         MAX_LRS = [p['lr'] for p in optimizer.param_groups]
         STEPS_PER_EPOCH = len(train_iterator)
@@ -194,7 +175,7 @@ if __name__ == "__main__":
         best_valid_loss = float('inf')
 
         params = {"epochs": EPOCHS, "learning_rate": learning_rate, "criterion": criterion, "optimizer": optimizer,
-                  "scheduler": scheduler, "random_state": SEED}
+                  "scheduler": scheduler, "scaler": scaler, "random_state": SEED}
 
         mlflow.log_params(params)
 
@@ -206,8 +187,8 @@ if __name__ == "__main__":
 
             start_time = time.monotonic()
 
-            train_loss, train_acc = train(train_iterator, model, criterion, optimizer, device)
-            valid_loss, valid_acc = evaluate(val_iterator, model, criterion, device)
+            train_loss, train_acc = train(train_iterator, model, criterion, optimizer, scaler, DEVICE)
+            valid_loss, valid_acc = evaluate(val_iterator, model, criterion, DEVICE)
 
             plot_losses["train_loss"].append(train_loss)
             plot_losses["val_loss"].append(valid_loss)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 model_name = "UNet.pt"
-ROOT_DIR = "D:/Software/CV_Projects/City_Segmentation"  # os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = "D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars"  # os.path.dirname(os.path.abspath(__file__))
 # base path of the dataset
 # DATASET_PATH = "D:/Software/CV_Projects/City_Segmentation/archive_2"
 DATASET_PATH = os.path.join(ROOT_DIR, 'archive_2')
@@ -56,7 +56,7 @@ TEST_PATHS = os.path.join(ARTIFACTS_OUTPUT, "test_paths.txt")
 """ Dataset Configs"""
 train_ratio = 0.8
 SEED = 1234
-valid_ratio = 0.15
+valid_ratio = 0.1
 TEST_SPLIT = 0.1
 
 
