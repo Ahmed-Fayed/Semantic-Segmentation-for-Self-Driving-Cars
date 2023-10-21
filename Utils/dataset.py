@@ -1,33 +1,25 @@
-import os
-
 import numpy as np
-import matplotlib.pyplot as plt
-import torch
 from tqdm import tqdm
 import cv2
 from PIL import Image
-from patchify import patchify
 from glob import glob
 import shutil
-import copy
-import random
 
 from config import *
 from Utils.utils import display, visualize, display_images
 
 from sklearn.model_selection import train_test_split
-from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
-import torchvision.transforms.functional as tf
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-import scipy.ndimage as ndimage
+from prefect import task
 
 
 """ Spliting Dataset """
 
 
-def split_dataset_atten(dataset_path, output_dir, verbose=True):
+@task(retries=3, retry_delay_seconds=2)
+def split_dataset(dataset_path, output_dir, verbose=True):
     dataset_images = sorted(glob(dataset_path + '/data*/data*/CameraRGB/*.png'))
     dataset_masks = sorted(glob(dataset_path + '/data*/data*/CameraSeg/*.png'))
     train_images, test_images, train_masks, test_masks = train_test_split(dataset_images, dataset_masks,
@@ -63,12 +55,11 @@ def split_dataset_atten(dataset_path, output_dir, verbose=True):
         print(f"test_images_atten size: {len(test_images)}")
         print(f"train_masks_atten size: {len(train_masks)}")
         print(f"test_masks_atten size: {len(test_masks)}")
-        print(train_images[0])
 
     return train_images, test_images, train_masks, test_masks
 
 
-# split_dataset_atten(DATASET_PATH, BASE_OUTPUT, verbose=True)
+# split_dataset(DATASET_PATH, BASE_OUTPUT, verbose=True)
 
 
 """ Data Augmentation """
@@ -101,11 +92,12 @@ def test_augmentation(img_path, mask_path, transform=None):
     visualize(transformed_image, transformed_mask, image, mask, "test_augmentation.jpg", save=True)
 
 
-img_path = os.path.join(BASE_OUTPUT, "train_dataset", "images", "02_00_000.png")
-mask_path = os.path.join(BASE_OUTPUT, "train_dataset", "masks", "02_00_000.png")
+# img_path = os.path.join(BASE_OUTPUT, "train_dataset", "images", "02_00_000.png")
+# mask_path = os.path.join(BASE_OUTPUT, "train_dataset", "masks", "02_00_000.png")
 # test_augmentation(img_path, mask_path, transform)
 
 
+@task(retries=3, retry_delay_seconds=2)
 def augment_dataset(imgs_dir, masks_dir, transform, count):
     '''Function for data augmentation
         Input:
@@ -137,8 +129,8 @@ def augment_dataset(imgs_dir, masks_dir, transform, count):
             cv2.imwrite(masks_output_dir + '/aug_{}_'.format(str(i + 1)) + img_name, transformed_mask)
 
 
-imgs_dir = BASE_OUTPUT + "/train_dataset/images"
-masks_dir = BASE_OUTPUT + "/train_dataset/masks"
+# imgs_dir = BASE_OUTPUT + "/train_dataset/images"
+# masks_dir = BASE_OUTPUT + "/train_dataset/masks"
 # augment_dataset(imgs_dir, masks_dir, transform, count=2)
 
 
@@ -163,7 +155,7 @@ class LyftDataset(Dataset):
         return len(self.images)
 
 
-t1 = A.Compose([
+preprocess = A.Compose([
     A.Resize(image_size[0], image_size[1]),
     A.augmentations.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
     ToTensorV2()
@@ -171,33 +163,33 @@ t1 = A.Compose([
 
 # images_dir = BASE_OUTPUT + "/train_dataset/aug_images"
 # masks_dir = BASE_OUTPUT + "/train_dataset/aug_masks"
-images_dir = BASE_OUTPUT + "/train_dataset/images"
-masks_dir = BASE_OUTPUT + "/train_dataset/masks"
-train_dataset = LyftDataset(images_dir, masks_dir, transform=t1)
-
-print(f"train_dataset: {train_dataset.__len__()}")
-val_num = int(valid_ratio * train_dataset.__len__())
-train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_dataset.__len__() - val_num, val_num],
-                                                               generator=torch.Generator().manual_seed(SEED))
-
-print(f"train_dataset: {train_dataset.__len__()}")
-print(f"val num: {val_num}")
-print(f"train_dataset: {train_dataset}")
-# # Create a data loader
-train_iterator = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
-val_iterator = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
+# images_dir = BASE_OUTPUT + "/train_dataset/images"
+# masks_dir = BASE_OUTPUT + "/train_dataset/masks"
+# train_dataset = LyftDataset(images_dir, masks_dir, transform=preprocess)
+#
+# print(f"train_dataset: {train_dataset.__len__()}")
+# val_num = int(valid_ratio * train_dataset.__len__())
+# train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_dataset.__len__() - val_num, val_num],
+#                                                                generator=torch.Generator().manual_seed(SEED))
+#
+# print(f"train_dataset: {train_dataset.__len__()}")
+# print(f"val num: {val_num}")
+# print(f"train_dataset: {train_dataset}")
+# # # Create a data loader
+# train_iterator = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
+# val_iterator = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
 
 
 # Iterate through the data loader
-print(type(train_iterator))
-print(train_iterator)
-images, labels = next(iter(train_iterator))
-print("Batch Size:", images.size(0))
-print(f"image: {images[0]}, Image Shape: {images[0].size()}")
-print(f"label: {labels[0]}, Label Shape: {labels[0].size()}")
-
-print(f'num of training examples: {len(train_dataset)}')
-print(f'num of validation examples: {len(val_dataset)}')
+# print(type(train_iterator))
+# print(train_iterator)
+# images, labels = next(iter(train_iterator))
+# print("Batch Size:", images.size(0))
+# print(f"image: {images[0]}, Image Shape: {images[0].size()}")
+# print(f"label: {labels[0]}, Label Shape: {labels[0].size()}")
+#
+# print(f'num of training examples: {len(train_dataset)}')
+# print(f'num of validation examples: {len(val_dataset)}')
 
 # for img,mask in train_iterator:
 #     img1 = np.transpose(img[0,:,:,:],(1,2,0))
