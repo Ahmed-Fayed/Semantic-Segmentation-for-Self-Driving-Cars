@@ -45,7 +45,8 @@ def visualize(image, mask, original_image=None, original_mask=None, fig_name="vi
 
     if original_image is None and original_mask is None:
         f, ax = plt.subplots(2, 1, figsize=(7, 7), squeeze=True)
-        f.set_tight_layout(h_pad=5, w_pad=5)
+        # f.set_tight_layout(h_pad=5, w_pad=5)
+        plt.tight_layout(pad=0.2, w_pad=1.0, h_pad=0.01)
 
         ax[0].imshow(image)
         ax[1].imshow(mask)

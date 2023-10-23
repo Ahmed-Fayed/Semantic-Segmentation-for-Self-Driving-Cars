@@ -105,12 +105,12 @@ class UNet(nn.Module):
 
 """ Test Model """
 
-input_image = torch.rand((1, 3, image_size[0], image_size[1]))
-model = UNet(num_classes=13)
-# Total parameters and trainable parameters.
-total_params = sum(p.numel() for p in model.parameters())
-print(f"{total_params:,} total parameters.")
-total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-print(f"{total_trainable_params:,} training parameters.")
-outputs = model(input_image)
-print(outputs.shape)
+# input_image = torch.rand((1, 3, image_size[0], image_size[1]))
+# model = UNet(num_classes=13)
+# # Total parameters and trainable parameters.
+# total_params = sum(p.numel() for p in model.parameters())
+# print(f"{total_params:,} total parameters.")
+# total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+# print(f"{total_trainable_params:,} training parameters.")
+# outputs = model(input_image)
+# print(outputs.shape)
