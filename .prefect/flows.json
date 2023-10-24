@@ -1,0 +1,3 @@
+{
+  "training_pipeline": "train.py:training_pipeline"
+}

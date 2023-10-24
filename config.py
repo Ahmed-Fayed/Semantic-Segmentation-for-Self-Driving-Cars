@@ -58,7 +58,3 @@ train_ratio = 0.8
 SEED = 1234
 valid_ratio = 0.1
 TEST_SPLIT = 0.1
-
-
-""" MLFlow commands"""
-# mlflow server --backend-store-uri sqlite:///backend.db
