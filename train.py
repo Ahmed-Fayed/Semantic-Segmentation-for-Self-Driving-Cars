@@ -287,7 +287,7 @@ def training_pipeline():
 
         # plotting and saving results
         plot_results(plot_losses["train_loss"], plot_losses["val_loss"], "Loss", True, "Loss")
-        plot_results(plot_accuracy["train_acc"], plot_accuracy["val_acc"], "Loss", True, "Accuracy")
+        plot_results(plot_accuracy["train_acc"], plot_accuracy["val_acc"], "Accuracy", True, "Accuracy")
 
         # load best weights
         model = UNet(num_classes=NUM_CLASSES)
