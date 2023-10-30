@@ -59,7 +59,7 @@ Finally after training finish this is the workflow:
 - ![plot](./Utils/output/artifacts/Loss.jpg)
 
 
-- Predictions on test datasert
+- Predictions on test dataset, note that the images are normalized, this is part of the preprocessing before inference
 - ![plot](./Utils/output/artifacts/test_results.jpg)
 
 ### use predict script
