@@ -56,7 +56,7 @@ Finally after training finish this is the workflow:
 # Results
 
 - Loss
-- ![plot](./Utils/output/artifacts/loss.jpg)
+- ![plot](./Utils/output/artifacts/Loss.jpg)
 
 
 - Predictions on test datasert
