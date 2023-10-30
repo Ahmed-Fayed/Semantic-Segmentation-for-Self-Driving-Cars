@@ -1,10 +1,11 @@
 .idea
-*output
+Utils/output/test_*
+Utils/output/train_*
 archive*
 *__pycache*
 mlartifacts
 mlruns
 backup
 *.pt
-*.png
-*.jpg
+#*.png
+#*.jpg
