@@ -46,34 +46,34 @@ Start Worker with the following command
 ``prefect worker start -p city_segmentation_pool``
 
 - Now use GUI to run the pipeline using the deployed workflow:
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/quick_run.png)
+- ![plot](./Utils/output/artifacts/quick_run.png)
 
 - you can also schedule your workflow so that it runs each period of time
 
 Finally after training finish this is the workflow:
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/prefect_workflow.png)
+- ![plot](./Utils/output/artifacts/prefect_workflow.png)
 
 # Results
 
 - Loss
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/loss.jpg)
+- ![plot](./Utils/output/artifacts/loss.jpg)
 
 
 - Predictions on test datasert
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/test_results.jpg)
+- ![plot](./Utils/output/artifacts/test_results.jpg)
 
 ### use predict script
 
 ``python .\predict.py --weights UNet.pt --img test.png``
 
 - Predict Result
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/predict_result.jpg)
+- ![plot](./Utils/output/artifacts/predict_result.jpg)
 
 
 # Monitoring
 
 - Initial report for prediction masks drift
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/train_vs_test_predictions.png)
+- ![plot](./Utils/output/artifacts/train_vs_test_predictions.png)
 
 to use `Postgresql` and `Grafana` execute the following commands:
 
@@ -84,9 +84,9 @@ python evidently_metrics_calculation.py
 ```
 
 - To visualize the data in the `Postgresql` table, access it using browser on: `http://localhost:8080`
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/postgresql_table.png)
+- ![plot](./Utils/output/artifacts/postgresql_table.png)
 
 
 - Access `Grafana` dashboard on: `http://localhost:3000`
-- ![plot](D:/Software/CV_Projects/Semantic-Segmentation-for-Self-Driving-Cars/Utils/output/artifacts/grafana.png)
+- ![plot](./Utils/output/artifacts/grafana.png)
 
